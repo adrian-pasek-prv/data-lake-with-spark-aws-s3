@@ -7,10 +7,12 @@ from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, dat
 
 
 config = configparser.ConfigParser()
-config.read('dl.cfg')
+# Use credentials from .aws folder
+config.read_file(open(f"{os.path.expanduser('~')}/.aws/credentials"))
 
-os.environ['AWS_ACCESS_KEY_ID']=config['AWS_ACCESS_KEY_ID']
-os.environ['AWS_SECRET_ACCESS_KEY']=config['AWS_SECRET_ACCESS_KEY']
+# Set environment variables
+os.environ['AWS_ACCESS_KEY_ID'] = config['AWS_ACCESS_KEY_ID']
+os.environ['AWS_SECRET_ACCESS_KEY'] = config['AWS_SECRET_ACCESS_KEY']
 
 
 def create_spark_session():
@@ -23,7 +25,7 @@ def create_spark_session():
 
 def process_song_data(spark, input_data, output_data):
     # get filepath to song data file
-    song_data = 
+    song_data = input_data + 'song_data/*/*/*/*.json'
     
     # read song data file
     df = 
