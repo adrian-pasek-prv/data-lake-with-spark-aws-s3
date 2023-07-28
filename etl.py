@@ -159,6 +159,14 @@ def process_log_data(spark, input_data, output_data):
 
 
 def main():
+    """
+    Description: Function that orchestrates ETL pipeline by first creating a SparkSession
+                 and finally processes the data with given input.
+
+    Returns:
+        None
+    """
+
     spark = create_spark_session()
     input_data = "s3a://udacity-dend/"
     output_data = "s3a://s3-5234624-emr-cluster/"
