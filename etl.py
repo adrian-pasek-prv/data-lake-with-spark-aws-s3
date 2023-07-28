@@ -2,7 +2,7 @@ import configparser
 from datetime import datetime
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import udf, col
+from pyspark.sql.functions import udf, col, monotonically_increasing_id
 from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, dayofweek
 
 
@@ -116,21 +116,17 @@ def process_log_data(spark, input_data, output_data):
 
     # create timestamp column from original timestamp column
     get_timestamp = udf(lambda x: datetime.fromtimestamp(int(x)/1000))
-    df = df.withColumn('timestamp', get_timestamp(df.ts))
-    
-    # create datetime column from original timestamp column
-    get_datetime = udf(lambda x: datetime.fromtimestamp(int(x)/1000).strftime('%Y-%m-%d %H:%M:%S'))
-    df = df.withColumn('datetime', get_datetime(df.ts))
+    df = df.withColumn('start_time', get_timestamp(df.ts))
     
     # extract columns to create time table
-    time_table = df.select(['timestamp',
-                          hour('timestamp').alias('hour'),
-                          dayofmonth('timestamp').alias('day'),
-                          weekofyear('timestamp').alias('week'),
-                          month('timestamp').alias('month'),
-                          year('timestamp').alias('year'),
-                          dayofweek('timestamp').alias('weekday')]).distinct().where(
-                              col('timestamp').isNotNull())
+    time_table = df.select(['start_time',
+                          hour('start_time').alias('hour'),
+                          dayofmonth('start_time').alias('day'),
+                          weekofyear('start_time').alias('week'),
+                          month('start_time').alias('month'),
+                          year('start_time').alias('year'),
+                          dayofweek('start_time').alias('weekday')]).distinct().where(
+                              col('start_time').isNotNull())
     
     # write time table to parquet files partitioned by year and month
     time_output = output_data + 'time'
@@ -145,7 +141,8 @@ def process_log_data(spark, input_data, output_data):
 
     # extract columns from joined song and log datasets to create songplays table 
     cond = [df.song == song_df.title, df.artist == song_df.artist_name, df.page == 'NextSong']
-    songplays_table = df.join(song_df, cond).select(df.timestamp,
+    songplays_table = df.join(song_df, cond).select(monotonically_increasing_id().alias('songplay_id'),
+                                                    df.start_time,
                                                     df.userId.alias('user_id'),
                                                     df.level,
                                                     song_df.song_id,
